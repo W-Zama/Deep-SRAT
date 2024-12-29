@@ -138,6 +138,15 @@ class MainWindow(QMainWindow):
         left_layout.addWidget(self.run_button)
         self.run_button.setEnabled(False)  # 初期状態は無効化
 
+        # Spacer
+        left_layout.addSpacerItem(QSpacerItem(
+            0, 30, QSizePolicy.Minimum, QSizePolicy.Minimum))
+
+        # 結果のエクスポートボタン
+        self.export_button = QPushButton("Export Results")
+        left_layout.addWidget(self.export_button)
+        self.export_button.setEnabled(False)  # 初期状態は無効化
+
         # 上詰め用のスペーサー
         left_layout.addStretch()
 

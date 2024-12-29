@@ -69,7 +69,6 @@ class MainWindow(QMainWindow):
 
         self.column_section = QWidget()  # カラム選択セクション全体を管理するウィジェット
         column_layout = QVBoxLayout(self.column_section)
-        column_layout.addWidget(create_line())
 
         # カラム選択コンボボックス
         self.testing_date_combobox = QComboBox()
@@ -77,10 +76,13 @@ class MainWindow(QMainWindow):
             "Testing Date", self.testing_date_combobox)
         column_layout.addWidget(label_form_testing_date)
 
+        column_layout.addWidget(create_line())
+
         self.num_of_failures_per_unit_time_combobox = QComboBox()
         label_form_num_of_failures_per_unit_time = LabelAndWidget(
             "Number of Failures per Unit Time", self.num_of_failures_per_unit_time_combobox)
         column_layout.addWidget(label_form_num_of_failures_per_unit_time)
+        column_layout.addWidget(create_line())
 
         # 確定ボタン
         confirm_button = QPushButton("Confirm")
@@ -97,7 +99,6 @@ class MainWindow(QMainWindow):
 
         self.hyperparameter_section = QWidget()  # ハイパーパラメータセクション全体を管理
         hyperparameter_layout = QVBoxLayout(self.hyperparameter_section)
-        hyperparameter_layout.addWidget(create_line())
 
         # Number of Epochs
         label_form_num_of_epochs = LabelAndWidget(
@@ -107,6 +108,7 @@ class MainWindow(QMainWindow):
              for epoch in self.hyperparameter_manager.get_options("epochs")]
         )
         hyperparameter_layout.addWidget(label_form_num_of_epochs)
+        hyperparameter_layout.addWidget(create_line())
 
         # Number of Units per Layer
         label_form_num_of_units_per_layer = LabelAndWidget(
@@ -116,6 +118,7 @@ class MainWindow(QMainWindow):
                 "units_per_layer")]
         )
         hyperparameter_layout.addWidget(label_form_num_of_units_per_layer)
+        hyperparameter_layout.addWidget(create_line())
 
         # Learning Rate
         label_form_learning_rate = LabelAndWidget(

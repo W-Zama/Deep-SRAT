@@ -79,7 +79,7 @@ class MainWindow(QMainWindow):
 
         self.num_of_failures_per_unit_time_combobox = QComboBox()
         label_form_num_of_failures_per_unit_time = LabelAndWidget(
-            "Number of Failures Per Unit Time", self.num_of_failures_per_unit_time_combobox)
+            "Number of Failures per Unit Time", self.num_of_failures_per_unit_time_combobox)
         column_layout.addWidget(label_form_num_of_failures_per_unit_time)
 
         # 確定ボタン
@@ -203,6 +203,9 @@ class MainWindow(QMainWindow):
             self.dataset.testing_date_series, self.dataset.num_of_failures_per_unit_time_series, "line_and_scatter", x_label=self.dataset.testing_date_column_name, y_label=self.dataset.num_of_failures_per_unit_time_column_name)
         self.canvas_cumulative.update_plot(
             self.dataset.testing_date_series, self.dataset.cumulative_num_of_failures_series, "line_and_scatter", x_label=self.dataset.testing_date_column_name, y_label="Cumulative " + self.dataset.num_of_failures_per_unit_time_column_name)
+
+        self.log_text_edit.append_log(
+            f"Columns selected successfully\nTesting Date: \"{self.dataset.testing_date_column_name}\", Number of Failures per Unit Time: \"{self.dataset.num_of_failures_per_unit_time_column_name}\"")
 
     def create_right_widget(self):
         right_widget = QWidget()

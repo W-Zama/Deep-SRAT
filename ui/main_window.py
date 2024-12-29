@@ -1,49 +1,24 @@
-import sys
-from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QLabel,
-    QSplitter, QPushButton, QLineEdit, QComboBox, QTextEdit
-)
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QFormLayout, QLineEdit, QComboBox, QCheckBox, QPushButton, QSizePolicy, QVBoxLayout, QLabel, QSpacerItem, QDoubleSpinBox, QFrame, QTabWidget, QTextEdit, QFileDialog
-from PyQt5.QtGui import QFont
+from ui.widgets import LabelAndWidget, create_line
+from logic.hyperparameter_manager import HyperparameterManager
+from logic.dataset import Dataset
+from ui.plots import GraphCanvas
 from PyQt5.QtCore import Qt
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
-import pandas as pd
-
-
-class GraphCanvas(FigureCanvas):
-    def __init__(self, parent=None, width=5, height=4, dpi=100):
-        fig = Figure(figsize=(width, height), dpi=dpi)
-        self.axes = fig.add_subplot(111)
-        super(GraphCanvas, self).__init__(fig)
-
-
-class LabelAndWidget(QWidget):
-    def __init__(self, label_text, widget):
-        super().__init__()
-        self.label_text = label_text
-        self.widget = widget
-
-        # レイアウトを作成
-        self.layout = QVBoxLayout()
-        self.setLayout(self.layout)
-
-        # ラベルとウィジェットを作成
-        self.label = QLabel(label_text)
-        self.layout.addWidget(self.label)
-        self.layout.addWidget(widget)
-
-        # マージンを設定
-        self.layout.setContentsMargins(0, 0, 0, 0)
+import sys
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QSplitter, QPushButton, QComboBox, QTextEdit, QTabWidget, QFileDialog, QSizePolicy, QSpacerItem
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.dataset = None
 
         self.setWindowTitle("Deep-SRGM")
         self.showMaximized()
+
+        # ハイパーパラメータの設定を読み込み
+        self.hyperparameter_manager = HyperparameterManager(
+            'resources/hyperparameters.yaml')
+        self.hyperparameter_manager.load_parameters()
 
         # メインウィジェットとレイアウト
         central_widget = QWidget()
@@ -54,6 +29,19 @@ class MainWindow(QMainWindow):
         main_splitter = QSplitter(Qt.Horizontal)
 
         # 左側のウィジェット
+        left_widget = self.create_left_widget()
+
+        # 右側のウィジェット
+        right_widget = self.create_right_widget()
+
+        # スプリッターにウィジェットを追加
+        main_splitter.addWidget(left_widget)
+        main_splitter.addWidget(right_widget)
+
+        # メインレイアウトにスプリッターを追加
+        main_layout.addWidget(main_splitter)
+
+    def create_left_widget(self):
         left_widget = QWidget()
         left_layout = QVBoxLayout(left_widget)
         left_layout.setContentsMargins(0, 10, 0, 10)
@@ -72,108 +60,90 @@ class MainWindow(QMainWindow):
         left_layout.addSpacerItem(QSpacerItem(
             0, 30, QSizePolicy.Minimum, QSizePolicy.Minimum))
 
-        # Hyperparameters
-        label = QLabel("2. Set Hyperparameters")
+        # カラム選択
+        label = QLabel("2. Choice the column")
         label.setStyleSheet("font-size: 20px;")
         left_layout.addWidget(label)
 
-        left_layout.addWidget(self.create_line())
+        self.column_section = QWidget()  # カラム選択セクション全体を管理するウィジェット
+        column_layout = QVBoxLayout(self.column_section)
+        column_layout.addWidget(create_line())
+
+        # カラム選択コンボボックス
+        self.testing_date_combobox = QComboBox()
+        label_form_testing_date = LabelAndWidget(
+            "Testing Date", self.testing_date_combobox)
+        column_layout.addWidget(label_form_testing_date)
+
+        self.num_of_failures_per_unit_time_combobox = QComboBox()
+        label_form_num_of_failures_per_unit_time = LabelAndWidget(
+            "Number of Failures Per Unit Time", self.num_of_failures_per_unit_time_combobox)
+        column_layout.addWidget(label_form_num_of_failures_per_unit_time)
+
+        # 確定ボタン
+        confirm_button = QPushButton("Confirm")
+        column_layout.addWidget(confirm_button)
+        confirm_button.clicked.connect(self.confirm_column_selection)
+
+        left_layout.addWidget(self.column_section)
+        self.column_section.setEnabled(False)  # 初期状態は無効化
+
+        # ハイパーパラメータ
+        label = QLabel("3. Set Hyperparameters")
+        label.setStyleSheet("font-size: 20px;")
+        left_layout.addWidget(label)
+
+        self.hyperparameter_section = QWidget()  # ハイパーパラメータセクション全体を管理
+        hyperparameter_layout = QVBoxLayout(self.hyperparameter_section)
+        hyperparameter_layout.addWidget(create_line())
 
         # Number of Epochs
         label_form_num_of_epochs = LabelAndWidget(
             "Number of Epochs", QComboBox())
         label_form_num_of_epochs.widget.addItems(
-            ["1000", "2000", "3000", "4000", "5000"])
-        left_layout.addWidget(label_form_num_of_epochs)
-
-        left_layout.addWidget(self.create_line())
+            [str(epoch)
+             for epoch in self.hyperparameter_manager.get_options("epochs")]
+        )
+        hyperparameter_layout.addWidget(label_form_num_of_epochs)
 
         # Number of Units per Layer
         label_form_num_of_units_per_layer = LabelAndWidget(
             "Number of Units per Layer", QComboBox())
         label_form_num_of_units_per_layer.widget.addItems(
-            ["100", "200", "300", "400", "500"])
-        left_layout.addWidget(label_form_num_of_units_per_layer)
-
-        left_layout.addWidget(self.create_line())
+            [str(unit) for unit in self.hyperparameter_manager.get_options(
+                "units_per_layer")]
+        )
+        hyperparameter_layout.addWidget(label_form_num_of_units_per_layer)
 
         # Learning Rate
         label_form_learning_rate = LabelAndWidget(
             "Learning Rate", QComboBox())
         label_form_learning_rate.widget.addItems(
-            ["0.001", "0.0001", "0.00001"])
-        left_layout.addWidget(label_form_learning_rate)
+            [str(lr)
+             for lr in self.hyperparameter_manager.get_options("learning_rate")]
+        )
+        hyperparameter_layout.addWidget(label_form_learning_rate)
 
-        left_layout.addWidget(self.create_line())
+        hyperparameter_layout.addWidget(create_line())
 
-        # Batch Size
-        label_form_batch_size = LabelAndWidget("Batch Size", QComboBox())
-        label_form_batch_size.widget.addItems(["16", "32", "64", "128", "256"])
-        left_layout.addWidget(label_form_batch_size)
-
-        left_layout.addWidget(self.create_line())
-
-        # Loss Function
-        label_form_loss_function = LabelAndWidget("Loss Function", QComboBox())
-        label_form_loss_function.widget.addItems(["MSE", "NPLLL"])
-        left_layout.addWidget(label_form_loss_function)
-
-        left_layout.addWidget(self.create_line())
+        left_layout.addWidget(self.hyperparameter_section)
+        self.hyperparameter_section.setEnabled(False)  # 初期状態は無効化
 
         # Spacer
         left_layout.addSpacerItem(QSpacerItem(
             0, 30, QSizePolicy.Minimum, QSizePolicy.Minimum))
 
         # 実行ボタン
-        run_button = QPushButton("Run")
-        left_layout.addWidget(run_button)
+        self.run_button = QPushButton("Run")
+        left_layout.addWidget(self.run_button)
+        self.run_button.setEnabled(False)  # 初期状態は無効化
 
         # 上詰め用のスペーサー
         left_layout.addStretch()
 
         left_widget.setLayout(left_layout)
 
-        main_splitter.addWidget(left_widget)
-
-        # 右側のウィジェット
-        right_widget = QWidget()
-        right_layout = QVBoxLayout(right_widget)
-        right_layout.setContentsMargins(0, 0, 0, 0)
-
-        # タブウィジェット
-        graph_tabs = QTabWidget()
-
-        # Example Graphs Canvas
-        graph_tab = QWidget()
-        graph_tab_layout = QVBoxLayout(graph_tab)
-        canvas = GraphCanvas(self)
-        x = [0, 1, 2, 3, 4]
-        y = [0, 1, 4, 9, 16]
-        canvas.axes.plot(x, y)
-        canvas.axes.set_title("Line Graph")
-        graph_tab_layout.addWidget(canvas)
-        graph_tabs.addTab(graph_tab, "Example Graphs")
-
-        graph_tab = QWidget()
-        graph_tab_layout = QVBoxLayout(graph_tab)
-        canvas = GraphCanvas(self)
-        x = [0, 1, 2, 3, 4]
-        y = [0, 32, 4, 131, 16]
-        canvas.axes.scatter(x, y)
-        canvas.axes.set_title("Line Graph")
-        graph_tab_layout.addWidget(canvas)
-        right_layout.addWidget(graph_tabs)
-        graph_tabs.addTab(graph_tab, "Example Graphs 2")
-
-        # ログエリア
-        log_area = QTextEdit()
-        log_area.setReadOnly(True)
-        log_area.setText("Now Processing...\n" * 10)
-        right_layout.addWidget(log_area)
-
-        main_splitter.addWidget(right_widget)
-
-        main_layout.addWidget(main_splitter)
+        return left_widget
 
     def import_csv(self):
         # ファイル選択ダイアログを表示
@@ -189,36 +159,84 @@ class MainWindow(QMainWindow):
         if file_path:
             try:
                 # pandasでCSVを読み込む
-                df = pd.read_csv(file_path)
+                self.dataset = Dataset(file_path)
+                self.log_area.append(
+                    f"CSV file imported successfully:\n{file_path}")
 
-                # データをテキストエリアに表示
-                self.text_area.setText(df.to_string())
+                # カラム選択セクションを有効化
+                self.column_section.setEnabled(True)
+
+                # カラム選択セクションのカラム選択コンボボックスにカラム名を追加
+                self.testing_date_combobox.addItems(
+                    self.dataset.get_column_names())
+                self.num_of_failures_per_unit_time_combobox.addItems(
+                    self.dataset.get_column_names())
+
             except Exception as e:
-                self.text_area.setText(f"Error reading CSV file:\n{e}")
+                pass
+                # self.text_area.setText(f"Error reading CSV file:\n{e}")
 
-    def create_line(self):
-        line = QFrame()
-        line.setFrameShape(QFrame.HLine)
-        line.setFrameShadow(QFrame.Sunken)
-        return line
+    def confirm_column_selection(self):
+        self.hyperparameter_section.setEnabled(True)
+        self.run_button.setEnabled(True)
 
-    def add_graph_tab(self, tab_widget, title, canvas):
-        """Add a tab with a specific graph canvas."""
+        # カラム名を取得し，セット
+        self.dataset.set_column_name(self.testing_date_combobox.currentText(),
+                                     self.num_of_failures_per_unit_time_combobox.currentText())
+
+        # データセットをセット
+        self.dataset.set_dataset()
+
+        # グラフを描画
+        self.canvas_per_unit_time.update_plot(
+            self.dataset.testing_date_series, self.dataset.num_of_failures_per_unit_time_series, "line_and_scatter", x_label=self.dataset.testing_date_column_name, y_label=self.dataset.num_of_failures_per_unit_time_column_name)
+        self.canvas_cumulative.update_plot(
+            self.dataset.testing_date_series, self.dataset.cumulative_num_of_failures_series, "line_and_scatter", x_label=self.dataset.testing_date_column_name, y_label="Cumulative " + self.dataset.num_of_failures_per_unit_time_column_name)
+
+    def create_right_widget(self):
+        right_widget = QWidget()
+        right_layout = QVBoxLayout(right_widget)
+        right_layout.setContentsMargins(0, 0, 0, 0)
+
+        # 右側の垂直スプリッター
+        right_vertical_splitter = QSplitter(Qt.Vertical)
+
+        # タブウィジェット
+        graph_tabs = QTabWidget()
+
+        # Graphs Canvas
         tab = QWidget()
-        tab_layout = QVBoxLayout(tab)
-        tab_layout.addWidget(canvas)
-        tab_widget.addTab(tab, title)
+        graph_tab_layout = QVBoxLayout(tab)
+        self.canvas_per_unit_time = GraphCanvas(self)
+        graph_tab_layout.addWidget(self.canvas_per_unit_time)
+        graph_tabs.addTab(tab, "Per Unit Time")
 
-    def create_graph_canvas(self, graph_type):
-        """Create a graph canvas and plot the specific type of graph."""
-        canvas = GraphCanvas(self)
-        if graph_type == "line":
-            canvas.plot_line_graph()
-        elif graph_type == "bar":
-            canvas.plot_bar_graph()
-        elif graph_type == "scatter":
-            canvas.plot_scatter_graph()
-        return canvas
+        tab = QWidget()
+        graph_tab_layout = QVBoxLayout(tab)
+        self.canvas_cumulative = GraphCanvas(self)
+        graph_tab_layout.addWidget(self.canvas_cumulative)
+        right_layout.addWidget(graph_tabs)
+        graph_tabs.addTab(tab, "Cumulative")
+
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
+        self.result_widget = QTextEdit(
+            "The results will be displayed here after you run.")
+        self.result_widget.setReadOnly(True)
+        layout.addWidget(self.result_widget)
+        right_layout.addWidget(tab)
+        graph_tabs.addTab(tab, "Result")
+
+        right_vertical_splitter.addWidget(graph_tabs)
+
+        # ログエリア
+        self.log_area = QTextEdit()
+        self.log_area.setReadOnly(True)
+        right_vertical_splitter.addWidget(self.log_area)
+
+        right_layout.addWidget(right_vertical_splitter)
+
+        return right_widget
 
 
 if __name__ == "__main__":

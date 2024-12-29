@@ -1,10 +1,12 @@
-from ui.widgets import LabelAndWidget, create_line
-from logic.hyperparameter_manager import HyperparameterManager
-from logic.dataset import Dataset
-from ui.plots import GraphCanvas
 from PyQt5.QtCore import Qt
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QSplitter, QPushButton, QComboBox, QTextEdit, QTabWidget, QFileDialog, QSizePolicy, QSpacerItem
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QSplitter, QPushButton, QComboBox, QTabWidget, QFileDialog, QSizePolicy, QSpacerItem, QTextEdit
+
+from logic.hyperparameter_manager import HyperparameterManager
+from ui.widgets import LabelAndWidget, create_line
+from ui.plots import GraphCanvas
+from logic.dataset import Dataset
+from logic.log_text_edit import LogTextEdit
 
 
 class MainWindow(QMainWindow):
@@ -169,7 +171,7 @@ class MainWindow(QMainWindow):
             try:
                 # pandasでCSVを読み込む
                 self.dataset = Dataset(file_path)
-                self.log_area.append(
+                self.log_text_edit.append_log(
                     f"CSV file imported successfully:\n{file_path}")
 
                 # カラム選択セクションを有効化
@@ -239,9 +241,8 @@ class MainWindow(QMainWindow):
         right_vertical_splitter.addWidget(graph_tabs)
 
         # ログエリア
-        self.log_area = QTextEdit()
-        self.log_area.setReadOnly(True)
-        right_vertical_splitter.addWidget(self.log_area)
+        self.log_text_edit = LogTextEdit()
+        right_vertical_splitter.addWidget(self.log_text_edit)
 
         right_layout.addWidget(right_vertical_splitter)
 

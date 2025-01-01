@@ -1,6 +1,6 @@
 from PyQt5.QtCore import Qt
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QSplitter, QPushButton, QComboBox, QTabWidget, QFileDialog, QSizePolicy, QSpacerItem, QTextEdit, QLineEdit
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QSplitter, QPushButton, QComboBox, QTabWidget, QFileDialog, QSizePolicy, QSpacerItem, QTextEdit, QLineEdit, QScrollArea
 from PyQt5.QtGui import QIntValidator
 
 from logic.hyperparameter_manager import HyperparameterManager
@@ -144,7 +144,6 @@ class MainWindow(QMainWindow):
              for lr in self.hyperparameter_manager.get_options("learning_rate")]
         )
         hyperparameter_layout.addWidget(label_form_learning_rate)
-
         hyperparameter_layout.addWidget(create_line())
 
         left_layout.addWidget(self.hyperparameter_section)
@@ -174,7 +173,12 @@ class MainWindow(QMainWindow):
 
         left_widget.setLayout(left_layout)
 
-        return left_widget
+        # QScrollAreaを作成
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)  # ウィジェットサイズに応じてスクロールバーを調整
+        scroll_area.setWidget(left_widget)  # left_widgetをラップ
+
+        return scroll_area
 
     def show_file_dialog(self):
         options = QFileDialog.Options()

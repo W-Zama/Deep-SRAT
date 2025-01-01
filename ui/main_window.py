@@ -16,6 +16,7 @@ class MainWindow(QMainWindow):
     def __init__(self, debug=False):
         super().__init__()
         self.dataset = None
+        self.log_text_edit = LogTextEdit()
         Config.set_debug_mode(debug)
 
         self.setWindowTitle("Deep-SRGM")
@@ -46,6 +47,9 @@ class MainWindow(QMainWindow):
 
         # メインレイアウトにスプリッターを追加
         main_layout.addWidget(main_splitter)
+
+        if Config.is_debug_mode():
+            self.enable_debug_mode()
 
     def create_left_widget(self):
         left_widget = QWidget()
@@ -172,8 +176,7 @@ class MainWindow(QMainWindow):
 
         return left_widget
 
-    def import_csv(self):
-        # ファイル選択ダイアログを表示
+    def show_file_dialog(self):
         options = QFileDialog.Options()
         file_path, _ = QFileDialog.getOpenFileName(
             self,
@@ -183,41 +186,44 @@ class MainWindow(QMainWindow):
             options=options
         )
 
-        if file_path:
-            try:
-                # pandasでCSVを読み込む
-                self.dataset = Dataset(file_path)
-                self.log_text_edit.append_log(
-                    f"CSV file imported successfully:\n{file_path}")
+        return file_path
 
-                # カラム選択セクションを有効化
-                self.column_section.setEnabled(True)
+    def read_csv_and_set_dataset_and_update_state(self, file_path):
+        # pandasでCSVを読み込む
+        self.dataset = Dataset(file_path)
+        self.log_text_edit.append_log(
+            f"CSV file imported successfully:\n{file_path}")
 
-                # カラム選択セクションのカラム選択コンボボックスにカラム名を追加
-                self.testing_date_combobox.addItems(
-                    self.dataset.get_column_names())
-                self.num_of_failures_per_unit_time_combobox.addItems(
-                    self.dataset.get_column_names())
+        # カラム選択セクションを有効化
+        self.column_section.setEnabled(True)
 
-            except Exception as e:
-                pass
-                # self.text_area.setText(f"Error reading CSV file:\n{e}")
+        # カラム選択セクションのカラム選択コンボボックスにカラム名を追加
+        self.testing_date_combobox.addItems(
+            self.dataset.get_column_names())
+        self.num_of_failures_per_unit_time_combobox.addItems(
+            self.dataset.get_column_names())
+
+    def import_csv(self):
+        file_path = self.show_file_dialog()
+        self.read_csv_and_set_dataset_and_update_state(file_path)
 
     def confirm_column_selection(self):
+        self.set_dataset_from_columns_name(self.testing_date_combobox.currentText(
+        ), self.num_of_failures_per_unit_time_combobox.currentText())
+
+    def set_dataset_from_columns_name(self, testing_date_column_name, num_of_failures_per_unit_time_column_name):
+        self.dataset.set_column_name(
+            testing_date_column_name, num_of_failures_per_unit_time_column_name)
         self.hyperparameter_section.setEnabled(True)
         self.run_button.setEnabled(True)
-
-        # カラム名を取得し，セット
-        self.dataset.set_column_name(self.testing_date_combobox.currentText(),
-                                     self.num_of_failures_per_unit_time_combobox.currentText())
 
         # データセットをセット
         self.dataset.set_dataset()
 
         # グラフを描画
-        self.canvas_per_unit_time.add_plot(
+        self.canvas_estimate_per_unit_time.add_plot(
             self.dataset.testing_date_df, self.dataset.num_of_failures_per_unit_time_df, plot_type="line_and_scatter", label='Imported Data', x_label=self.dataset.testing_date_column_name, y_label=self.dataset.num_of_failures_per_unit_time_column_name)
-        self.canvas_cumulative.add_plot(
+        self.canvas_estimate_cumulative.add_plot(
             self.dataset.testing_date_df, self.dataset.cumulative_num_of_failures_df, plot_type="line_and_scatter", label='Imported Data', x_label=self.dataset.testing_date_column_name, y_label="Cumulative " + self.dataset.num_of_failures_per_unit_time_column_name)
 
         self.log_text_edit.append_log(
@@ -237,9 +243,16 @@ class MainWindow(QMainWindow):
         if seed == "":
             seed = None
 
-        # deep_srgm.run(self.dataset.get_testing_date_df(), self.dataset.get_num_of_failures_per_unit_time_df(), seed=seed, num_of_epochs=int(num_of_epochs), num_of_units_per_layer=int(num_of_units_per_layer), learning_rate=float(learning_rate), batch_size=batch_size, log=self.log_text_edit)
-        model, scaler_X, scaler_y = deep_srgm.run(self.dataset.get_testing_date_df(), self.dataset.get_num_of_failures_per_unit_time_df(
-        ), seed=1, num_of_epochs=1000, num_of_units_per_layer=300, learning_rate=.001, batch_size=2, main_window=self)
+        if Config.is_debug_mode():
+            # デバッグモードの場合はハイパーパラメータを固定
+            seed = 1
+            num_of_epochs = 1000
+            num_of_units_per_layer = 300
+            learning_rate = .001
+            batch_size = 2
+
+        model, scaler_X, scaler_y = deep_srgm.run(self.dataset.get_testing_date_df(), self.dataset.get_num_of_failures_per_unit_time_df(), seed=seed, num_of_epochs=int(
+            num_of_epochs), num_of_units_per_layer=int(num_of_units_per_layer), learning_rate=float(learning_rate), batch_size=batch_size, main_window=self)
 
     def create_right_widget(self):
         right_widget = QWidget()
@@ -292,12 +305,23 @@ class MainWindow(QMainWindow):
         right_vertical_splitter.addWidget(graph_tabs)
 
         # ログエリア
-        self.log_text_edit = LogTextEdit()
+
         right_vertical_splitter.addWidget(self.log_text_edit)
 
         right_layout.addWidget(right_vertical_splitter)
 
         return right_widget
+
+    def enable_debug_mode(self):
+        self.setWindowTitle(self.windowTitle() + " (Debug Mode)")
+        self.log_text_edit.append_log("Debug Mode is enabled.")
+
+        # データセットを自動設定
+        self.read_csv_and_set_dataset_and_update_state(
+            "resources/example_datasets/J1.csv")
+
+        self.set_dataset_from_columns_name(
+            "time_interval", "number_of_failures")
 
 
 if __name__ == "__main__":

@@ -72,8 +72,16 @@ def run(X, y, seed, num_of_epochs, num_of_units_per_layer, learning_rate, batch_
         cumulative_predictions = np.cumsum(predictions_original)
         cumulative_y = np.cumsum(y_original)
 
-    main_window.canvas_per_unit_time.add_plot(
+    # 予測値のプロット（単位時間あたり）
+    main_window.canvas_estimate_per_unit_time.add_plot(
         X, predictions_original, "line_and_scatter", "Predictions")
+
+    # 予測値の累積値を計算
+    cumulative_predictions = np.cumsum(predictions_original)
+
+    # 予測値のプロット（累積）
+    main_window.canvas_estimate_cumulative.add_plot(
+        X, cumulative_predictions, "line_and_scatter", "Predictions")
 
     # # 精度の計算 (MSE: スケールを戻した値で計算)
     # mse_train = np.mean(
@@ -122,14 +130,14 @@ def run(X, y, seed, num_of_epochs, num_of_units_per_layer, learning_rate, batch_
     # # plt.show()
 
     # 予測値のプロット（単位時間あたり）
-    plt.figure(figsize=(10, 6))
-    plt.scatter(X, y_original,
-                label=f"Validation Data", color="orange")
-    plt.plot(X, predictions_original,
-             label=f"Predictions", color="red")
-    plt.grid()
-    plt.legend()
-    plt.show()
+    # plt.figure(figsize=(10, 6))
+    # plt.scatter(X, y_original,
+    #             label=f"Validation Data", color="orange")
+    # plt.plot(X, predictions_original,
+    #          label=f"Predictions", color="red")
+    # plt.grid()
+    # plt.legend()
+    # plt.show()
 
     # # 予測値のプロット（累積）
     # plt.figure(figsize=(10, 6))

@@ -1,6 +1,6 @@
 from PyQt5.QtCore import Qt
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QSplitter, QPushButton, QComboBox, QTabWidget, QFileDialog, QSizePolicy, QSpacerItem, QTextEdit, QLineEdit, QScrollArea
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QSplitter, QPushButton, QComboBox, QTabWidget, QFileDialog, QSizePolicy, QSpacerItem, QTextEdit, QLineEdit, QScrollArea, QSpinBox
 from PyQt5.QtGui import QIntValidator
 
 from logic.hyperparameter_manager import HyperparameterManager
@@ -68,7 +68,7 @@ class MainWindow(QMainWindow):
         left_layout.addWidget(import_button)
 
         left_layout.addSpacerItem(QSpacerItem(
-            0, 30, QSizePolicy.Minimum, QSizePolicy.Minimum))
+            0, 20, QSizePolicy.Minimum, QSizePolicy.Minimum))
 
         # カラム選択
         label = QLabel("2. Choice the column")
@@ -99,6 +99,10 @@ class MainWindow(QMainWindow):
 
         left_layout.addWidget(self.column_section)
         self.column_section.setEnabled(False)  # 初期状態は無効化
+
+        # Spacer
+        left_layout.addSpacerItem(QSpacerItem(
+            0, 20, QSizePolicy.Minimum, QSizePolicy.Minimum))
 
         # ハイパーパラメータ
         label = QLabel("3. Set Hyperparameters")
@@ -151,7 +155,12 @@ class MainWindow(QMainWindow):
 
         # Spacer
         left_layout.addSpacerItem(QSpacerItem(
-            0, 30, QSizePolicy.Minimum, QSizePolicy.Minimum))
+            0, 20, QSizePolicy.Minimum, QSizePolicy.Minimum))
+
+        # 学習を実行
+        label = QLabel("4. Run the Training")
+        label.setStyleSheet("font-size: 20px;")
+        left_layout.addWidget(label)
 
         # 実行ボタン
         self.run_button = QPushButton("Run")
@@ -161,7 +170,28 @@ class MainWindow(QMainWindow):
 
         # Spacer
         left_layout.addSpacerItem(QSpacerItem(
-            0, 30, QSizePolicy.Minimum, QSizePolicy.Minimum))
+            0, 20, QSizePolicy.Minimum, QSizePolicy.Minimum))
+
+        # 予測を実行
+        label = QLabel("5. Prediction")
+        label.setStyleSheet("font-size: 20px;")
+        left_layout.addWidget(label)
+
+        # 予測点をスピンボックスで選択
+        label_form_predict_spinbox = LabelAndWidget(
+            "Number to Predict", QSpinBox())
+        label_form_predict_spinbox.widget.setMinimum(0)
+        label_form_predict_spinbox.widget.setMaximum(100)
+        left_layout.addWidget(label_form_predict_spinbox)
+
+        # Spacer
+        left_layout.addSpacerItem(QSpacerItem(
+            0, 20, QSizePolicy.Minimum, QSizePolicy.Minimum))
+
+        # エクスポート
+        label = QLabel("6. Export Results")
+        label.setStyleSheet("font-size: 20px;")
+        left_layout.addWidget(label)
 
         # 結果のエクスポートボタン
         self.export_button = QPushButton("Export Results")
@@ -169,7 +199,7 @@ class MainWindow(QMainWindow):
         self.export_button.setEnabled(False)  # 初期状態は無効化
 
         # 上詰め用のスペーサー
-        left_layout.addStretch()
+        # left_layout.addStretch()
 
         left_widget.setLayout(left_layout)
 

@@ -12,9 +12,10 @@ import logic.deep_srgm as deep_srgm
 
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, debug=False):
         super().__init__()
         self.dataset = None
+        self.debug = debug
 
         self.setWindowTitle("Deep-SRGM")
         self.showMaximized()
@@ -253,16 +254,30 @@ class MainWindow(QMainWindow):
         # Graphs Canvas
         tab = QWidget()
         graph_tab_layout = QVBoxLayout(tab)
-        self.canvas_per_unit_time = GraphCanvas(self)
-        graph_tab_layout.addWidget(self.canvas_per_unit_time)
-        graph_tabs.addTab(tab, "Per Unit Time")
+        self.canvas_estimate_per_unit_time = GraphCanvas(self)
+        graph_tab_layout.addWidget(self.canvas_estimate_per_unit_time)
+        graph_tabs.addTab(tab, "Estimate (Per Unit Time)")
 
         tab = QWidget()
         graph_tab_layout = QVBoxLayout(tab)
-        self.canvas_cumulative = GraphCanvas(self)
-        graph_tab_layout.addWidget(self.canvas_cumulative)
+        self.canvas_estimate_cumulative = GraphCanvas(self)
+        graph_tab_layout.addWidget(self.canvas_estimate_cumulative)
         right_layout.addWidget(graph_tabs)
-        graph_tabs.addTab(tab, "Cumulative")
+        graph_tabs.addTab(tab, "Estimate (Cumulative)")
+
+        tab = QWidget()
+        graph_tab_layout = QVBoxLayout(tab)
+        self.canvas_predict_per_unit_time = GraphCanvas(self)
+        graph_tab_layout.addWidget(self.canvas_predict_per_unit_time)
+        right_layout.addWidget(graph_tabs)
+        graph_tabs.addTab(tab, "Predict (Per Unit Time)")
+
+        tab = QWidget()
+        graph_tab_layout = QVBoxLayout(tab)
+        self.canvas_predicta_cumulative = GraphCanvas(self)
+        graph_tab_layout.addWidget(self.canvas_predicta_cumulative)
+        right_layout.addWidget(graph_tabs)
+        graph_tabs.addTab(tab, "Predict (Cumulative)")
 
         tab = QWidget()
         layout = QVBoxLayout(tab)
@@ -271,12 +286,12 @@ class MainWindow(QMainWindow):
         self.result_widget.setReadOnly(True)
         layout.addWidget(self.result_widget)
         right_layout.addWidget(tab)
-        graph_tabs.addTab(tab, "Result")
+        graph_tabs.addTab(tab, "Result Summary")
 
         right_vertical_splitter.addWidget(graph_tabs)
 
         # ログエリア
-        self.log_text_edit = LogTextEdit()
+        self.log_text_edit=LogTextEdit()
         right_vertical_splitter.addWidget(self.log_text_edit)
 
         right_layout.addWidget(right_vertical_splitter)
@@ -285,7 +300,7 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = MainWindow()
+    app=QApplication(sys.argv)
+    window=MainWindow()
     window.show()
     sys.exit(app.exec_())

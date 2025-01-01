@@ -1,7 +1,6 @@
 import pandas as pd
 
 
-
 class Dataset():
     def __init__(self, file_path):
         self.file_path = file_path
@@ -37,13 +36,16 @@ class Dataset():
             self.num_of_failures_per_unit_time_column_name = num_of_failures_per_unit_time_column_name
 
     def set_dataset(self):
-        self.testing_date_series = self.df[self.testing_date_column_name]
-        self.num_of_failures_per_unit_time_series = self.df[
-            self.num_of_failures_per_unit_time_column_name]
+        self.testing_date_df = self.df[[self.testing_date_column_name]]
+        self.num_of_failures_per_unit_time_df = self.df[[
+            self.num_of_failures_per_unit_time_column_name]]
         self.calc_and_set_cumulative_data()
 
+    def get_testing_date_df(self):
+        return self.testing_date_df
+
+    def get_num_of_failures_per_unit_time_df(self):
+        return self.num_of_failures_per_unit_time_df
+
     def calc_and_set_cumulative_data(self):
-        self.cumulative_num_of_failures_series = self.num_of_failures_per_unit_time_series.cumsum()
-
-
-
+        self.cumulative_num_of_failures_df = self.num_of_failures_per_unit_time_df.cumsum()

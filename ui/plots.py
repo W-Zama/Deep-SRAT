@@ -18,9 +18,25 @@ class GraphCanvas(FigureCanvas):
             self.axes.scatter(x, y, color=self.default_color)
         elif plot_type == "line_and_scatter":
             self.axes.plot(x, y, marker="o", color=self.default_color)
-        self.axes.grid()
         self.axes.set_xlabel(x_label)
         self.axes.set_ylabel(y_label)
+        self.draw()
+
+    def add_plot(self, x, y, plot_type="line_and_scatter", label="", x_label="", y_label=""):
+        if plot_type == "line":
+            self.axes.plot(x, y, label=label)
+        elif plot_type == "scatter":
+            self.axes.scatter(x, y, label=label)
+        elif plot_type == "line_and_scatter":
+            self.axes.plot(x, y, marker="o", label=label)
+            self.axes.grid()
+        if label:
+            self.axes.legend()
+        if x_label:
+            self.axes.set_xlabel(x_label)
+        if y_label:
+            self.axes.set_ylabel(y_label)
+        self.axes.grid()
         self.draw()
 
     def __set_plot_config(self):

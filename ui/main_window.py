@@ -1,12 +1,14 @@
 from PyQt5.QtCore import Qt
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QSplitter, QPushButton, QComboBox, QTabWidget, QFileDialog, QSizePolicy, QSpacerItem, QTextEdit
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QSplitter, QPushButton, QComboBox, QTabWidget, QFileDialog, QSizePolicy, QSpacerItem, QTextEdit, QLineEdit
+from PyQt5.QtGui import QIntValidator
 
 from logic.hyperparameter_manager import HyperparameterManager
 from ui.widgets import LabelAndWidget, create_line
 from ui.plots import GraphCanvas
 from logic.dataset import Dataset
 from logic.log_text_edit import LogTextEdit
+import logic.deep_srgm as deep_srgm
 
 
 class MainWindow(QMainWindow):
@@ -100,6 +102,14 @@ class MainWindow(QMainWindow):
         self.hyperparameter_section = QWidget()  # ハイパーパラメータセクション全体を管理
         hyperparameter_layout = QVBoxLayout(self.hyperparameter_section)
 
+        # Seed
+        label_form_seed = LabelAndWidget("Seed", QLineEdit())
+        label_form_seed.widget.setValidator(QIntValidator())
+        label_form_seed.widget.setPlaceholderText(
+            "Enter a seed (If not set, leave blank)")
+        hyperparameter_layout.addWidget(label_form_seed)
+        hyperparameter_layout.addWidget(create_line())
+
         # Number of Epochs
         label_form_num_of_epochs = LabelAndWidget(
             "Number of Epochs", QComboBox())
@@ -141,6 +151,7 @@ class MainWindow(QMainWindow):
         # 実行ボタン
         self.run_button = QPushButton("Run")
         left_layout.addWidget(self.run_button)
+        self.run_button.clicked.connect(self.run)
         self.run_button.setEnabled(False)  # 初期状態は無効化
 
         # Spacer
@@ -202,13 +213,31 @@ class MainWindow(QMainWindow):
         self.dataset.set_dataset()
 
         # グラフを描画
-        self.canvas_per_unit_time.update_plot(
-            self.dataset.testing_date_series, self.dataset.num_of_failures_per_unit_time_series, "line_and_scatter", x_label=self.dataset.testing_date_column_name, y_label=self.dataset.num_of_failures_per_unit_time_column_name)
-        self.canvas_cumulative.update_plot(
-            self.dataset.testing_date_series, self.dataset.cumulative_num_of_failures_series, "line_and_scatter", x_label=self.dataset.testing_date_column_name, y_label="Cumulative " + self.dataset.num_of_failures_per_unit_time_column_name)
+        self.canvas_per_unit_time.add_plot(
+            self.dataset.testing_date_df, self.dataset.num_of_failures_per_unit_time_df, plot_type="line_and_scatter", label='Imported Data', x_label=self.dataset.testing_date_column_name, y_label=self.dataset.num_of_failures_per_unit_time_column_name)
+        self.canvas_cumulative.add_plot(
+            self.dataset.testing_date_df, self.dataset.cumulative_num_of_failures_df, plot_type="line_and_scatter", label='Imported Data', x_label=self.dataset.testing_date_column_name, y_label="Cumulative " + self.dataset.num_of_failures_per_unit_time_column_name)
 
         self.log_text_edit.append_log(
             f"Columns selected successfully\nTesting Date: \"{self.dataset.testing_date_column_name}\", Number of Failures per Unit Time: \"{self.dataset.num_of_failures_per_unit_time_column_name}\"")
+
+    def run(self):
+        # ハイパーパラメータを取得
+        seed = self.hyperparameter_section.findChild(QLineEdit).text()
+        num_of_epochs = self.hyperparameter_section.findChild(
+            QComboBox).currentText()
+        num_of_units_per_layer = self.hyperparameter_section.findChild(
+            QComboBox).currentText()
+        learning_rate = self.hyperparameter_section.findChild(
+            QComboBox).currentText()
+        batch_size = 32
+
+        if seed == "":
+            seed = None
+
+        # deep_srgm.run(self.dataset.get_testing_date_df(), self.dataset.get_num_of_failures_per_unit_time_df(), seed=seed, num_of_epochs=int(num_of_epochs), num_of_units_per_layer=int(num_of_units_per_layer), learning_rate=float(learning_rate), batch_size=batch_size, log=self.log_text_edit)
+        model, scaler_X, scaler_y = deep_srgm.run(self.dataset.get_testing_date_df(), self.dataset.get_num_of_failures_per_unit_time_df(
+        ), seed=1, num_of_epochs=1000, num_of_units_per_layer=300, learning_rate=.001, batch_size=2, main_window=self)
 
     def create_right_widget(self):
         right_widget = QWidget()

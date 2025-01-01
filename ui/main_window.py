@@ -255,10 +255,10 @@ class MainWindow(QMainWindow):
         self.dataset.set_dataset()
 
         # グラフを描画
-        self.canvas_estimate_per_unit_time.add_plot(
-            self.dataset.testing_date_df, self.dataset.num_of_failures_per_unit_time_df, plot_type="line_and_scatter", label='Imported Data', x_label=self.dataset.testing_date_column_name, y_label=self.dataset.num_of_failures_per_unit_time_column_name)
-        self.canvas_estimate_cumulative.add_plot(
-            self.dataset.testing_date_df, self.dataset.cumulative_num_of_failures_df, plot_type="line_and_scatter", label='Imported Data', x_label=self.dataset.testing_date_column_name, y_label="Cumulative " + self.dataset.num_of_failures_per_unit_time_column_name)
+        self.canvas_estimate_per_unit_time.update_plot(self.dataset.testing_date_df, self.dataset.num_of_failures_per_unit_time_df, "raw_data", "line_and_scatter",
+                                                       self.dataset.testing_date_column_name, self.dataset.num_of_failures_per_unit_time_column_name)
+        self.canvas_estimate_cumulative.update_plot(self.dataset.testing_date_df, self.dataset.cumulative_num_of_failures_df, "raw_data", "line_and_scatter",
+                                                    self.dataset.testing_date_column_name, "Cumulative " + self.dataset.num_of_failures_per_unit_time_column_name)
 
         self.log_text_edit.append_log(
             f"Columns selected successfully\nTesting Date: \"{self.dataset.testing_date_column_name}\", Number of Failures per Unit Time: \"{self.dataset.num_of_failures_per_unit_time_column_name}\"")

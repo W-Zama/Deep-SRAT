@@ -78,15 +78,15 @@ def run(X, y, seed, num_of_epochs, num_of_units_per_layer, learning_rate, batch_
         cumulative_y = np.cumsum(y_original)
 
     # 予測値のプロット（単位時間あたり）
-    main_window.canvas_estimate_per_unit_time.add_plot(
-        X, predictions_original, "line_and_scatter", "Predictions")
+    main_window.canvas_estimate_per_unit_time.update_plot(
+        X, predictions_original, "estimates", "line_and_scatter")
 
     # 予測値の累積値を計算
     cumulative_predictions = np.cumsum(predictions_original)
 
     # 予測値のプロット（累積）
-    main_window.canvas_estimate_cumulative.add_plot(
-        X, cumulative_predictions, "line_and_scatter", "Predictions")
+    main_window.canvas_estimate_cumulative.update_plot(
+        X, cumulative_predictions, "estimates", "line_and_scatter")
 
     # # 精度の計算 (MSE: スケールを戻した値で計算)
     # mse_train = np.mean(

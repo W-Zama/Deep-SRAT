@@ -6,6 +6,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 from sklearn.preprocessing import MinMaxScaler
+from PyQt5.QtWidgets import QApplication
 
 from logic.custom_loss_function import PoissonLogLikelihoodLoss
 
@@ -56,11 +57,15 @@ def run(X, y, seed, num_of_epochs, num_of_units_per_layer, learning_rate, batch_
 
         train_losses.append(epoch_loss / batch_count)
 
+        # ログの出力
         if (epoch + 1) % 100 == 0:
             print(
                 f"Epoch [{epoch + 1}/{num_of_epochs}], Train Loss: {loss.item():.4f}")
             main_window.log_text_edit.append_log(
                 f"Epoch [{epoch + 1}/{num_of_epochs}], Train Loss: {loss.item():.4f}")
+
+            # メインウィンドウの更新
+            QApplication.processEvents()
 
     model.eval()
     with torch.no_grad():

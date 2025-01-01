@@ -9,13 +9,14 @@ from ui.plots import GraphCanvas
 from logic.dataset import Dataset
 from logic.log_text_edit import LogTextEdit
 import logic.deep_srgm as deep_srgm
+from logic.config import Config
 
 
 class MainWindow(QMainWindow):
     def __init__(self, debug=False):
         super().__init__()
         self.dataset = None
-        self.debug = debug
+        Config.set_debug_mode(debug)
 
         self.setWindowTitle("Deep-SRGM")
         self.showMaximized()
@@ -291,7 +292,7 @@ class MainWindow(QMainWindow):
         right_vertical_splitter.addWidget(graph_tabs)
 
         # ログエリア
-        self.log_text_edit=LogTextEdit()
+        self.log_text_edit = LogTextEdit()
         right_vertical_splitter.addWidget(self.log_text_edit)
 
         right_layout.addWidget(right_vertical_splitter)
@@ -300,7 +301,7 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == "__main__":
-    app=QApplication(sys.argv)
-    window=MainWindow()
+    app = QApplication(sys.argv)
+    window = MainWindow()
     window.show()
     sys.exit(app.exec_())

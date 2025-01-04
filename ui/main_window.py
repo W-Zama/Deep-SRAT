@@ -292,7 +292,7 @@ class MainWindow(QMainWindow):
 
         self.log_text_edit.append_log("Model training is started.")
 
-        model, scaler_X, scaler_y = self.deep_srgm.run(self.dataset.get_testing_date_df(), self.dataset.get_num_of_failures_per_unit_time_df(), seed=seed, num_of_epochs=int(
+        self.deep_srgm.run(self.dataset.get_testing_date_df(), self.dataset.get_num_of_failures_per_unit_time_df(), seed=seed, num_of_epochs=int(
             num_of_epochs), num_of_units_per_layer=int(num_of_units_per_layer), learning_rate=float(learning_rate), batch_size=batch_size)
 
         self.log_text_edit.append_log("Model training is completed.")

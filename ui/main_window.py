@@ -2,13 +2,14 @@ from PyQt5.QtCore import Qt
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QSplitter, QPushButton, QComboBox, QTabWidget, QFileDialog, QSizePolicy, QSpacerItem, QTextEdit, QLineEdit, QScrollArea, QSpinBox
 from PyQt5.QtGui import QIntValidator
+import numpy as np
 
 from logic.hyperparameter_manager import HyperparameterManager
 from ui.widgets import LabelAndWidget, create_line
 from ui.plots import GraphCanvas
 from logic.dataset import Dataset
 from logic.log_text_edit import LogTextEdit
-import logic.deep_srgm as deep_srgm
+from logic.deep_srgm import DeepSRGM
 from logic.config import Config
 
 
@@ -18,6 +19,7 @@ class MainWindow(QMainWindow):
         self.dataset = None
         self.log_text_edit = LogTextEdit()
         Config.set_debug_mode(debug)
+        self.deep_srgm = DeepSRGM(self)
 
         self.setWindowTitle("Deep-SRGM")
         self.showMaximized()
@@ -178,11 +180,14 @@ class MainWindow(QMainWindow):
         left_layout.addWidget(label)
 
         # 予測点をスピンボックスで選択
-        label_form_predict_spinbox = LabelAndWidget(
+        self.label_form_predict_spinbox = LabelAndWidget(
             "Number to Predict", QSpinBox())
-        label_form_predict_spinbox.widget.setMinimum(0)
-        label_form_predict_spinbox.widget.setMaximum(100)
-        left_layout.addWidget(label_form_predict_spinbox)
+        self.label_form_predict_spinbox.widget.setMinimum(0)
+        self.label_form_predict_spinbox.widget.setMaximum(100)
+        self.label_form_predict_spinbox.widget.setEnabled(False)     # 初期状態は無効化
+        self.label_form_predict_spinbox.widget.valueChanged.connect(
+            self.predict)
+        left_layout.addWidget(self.label_form_predict_spinbox)
 
         # Spacer
         left_layout.addSpacerItem(QSpacerItem(
@@ -287,10 +292,39 @@ class MainWindow(QMainWindow):
 
         self.log_text_edit.append_log("Model training is started.")
 
-        model, scaler_X, scaler_y = deep_srgm.run(self.dataset.get_testing_date_df(), self.dataset.get_num_of_failures_per_unit_time_df(), seed=seed, num_of_epochs=int(
-            num_of_epochs), num_of_units_per_layer=int(num_of_units_per_layer), learning_rate=float(learning_rate), batch_size=batch_size, main_window=self)
+        model, scaler_X, scaler_y = self.deep_srgm.run(self.dataset.get_testing_date_df(), self.dataset.get_num_of_failures_per_unit_time_df(), seed=seed, num_of_epochs=int(
+            num_of_epochs), num_of_units_per_layer=int(num_of_units_per_layer), learning_rate=float(learning_rate), batch_size=batch_size)
 
         self.log_text_edit.append_log("Model training is completed.")
+
+        self.label_form_predict_spinbox.widget.setEnabled(True)
+        self.export_button.setEnabled(True)
+
+        self.canvas_predict_per_unit_time.update_plot(
+            self.dataset.testing_date_df, self.dataset.num_of_failures_per_unit_time_df, "raw_data", "line_and_scatter")
+        self.canvas_predict_cumulative.update_plot(self.dataset.testing_date_df, self.dataset.cumulative_num_of_failures_df, "raw_data", "line_and_scatter",
+                                                   self.dataset.testing_date_column_name, "Cumulative " + self.dataset.num_of_failures_per_unit_time_column_name)
+
+    def predict(self):
+        # 予測点を取得
+        num_of_predicts = self.findChild(QSpinBox).value()
+
+        # 予測値取得
+        X_predict, y_predict = self.deep_srgm.predict(num_of_predicts)
+
+        if (X_predict is None) or (y_predict is None):
+            self.canvas_predict_per_unit_time.delete_plot("predicts")
+            self.canvas_predict_cumulative.delete_plot("predicts")
+        else:
+            # 予測値をグラフに描画
+            self.canvas_predict_per_unit_time.delete_plot("predicts")
+            self.canvas_predict_per_unit_time.update_plot(
+                X_predict, y_predict, "predicts", "line_and_scatter", self.dataset.testing_date_column_name, self.dataset.num_of_failures_per_unit_time_column_name)
+            self.canvas_predict_cumulative.delete_plot("predicts")
+            y_predict_cumulative = self.dataset.cumulative_num_of_failures_df.iloc[-1].values + np.cumsum(
+                y_predict)
+            self.canvas_predict_cumulative.update_plot(
+                X_predict, y_predict_cumulative, "predicts", "line_and_scatter", self.dataset.testing_date_column_name)
 
     def create_right_widget(self):
         right_widget = QWidget()
@@ -326,8 +360,8 @@ class MainWindow(QMainWindow):
 
         tab = QWidget()
         graph_tab_layout = QVBoxLayout(tab)
-        self.canvas_predicta_cumulative = GraphCanvas(self)
-        graph_tab_layout.addWidget(self.canvas_predicta_cumulative)
+        self.canvas_predict_cumulative = GraphCanvas(self)
+        graph_tab_layout.addWidget(self.canvas_predict_cumulative)
         right_layout.addWidget(graph_tabs)
         graph_tabs.addTab(tab, "Predict (Cumulative)")
 
@@ -360,6 +394,8 @@ class MainWindow(QMainWindow):
 
         self.set_dataset_from_columns_name(
             "time_interval", "number_of_failures")
+
+        # 学習済みモデルを読み込み
 
 
 if __name__ == "__main__":

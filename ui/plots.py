@@ -12,35 +12,35 @@ class GraphCanvas(FigureCanvas):
         self.predicts = None
         super(GraphCanvas, self).__init__(fig)
 
-    def update_plot(self, x, y, data_type, plot_type="line_and_scatter", x_label="", y_label=""):
+    def update_plot(self, x, y, data_type, plot_type="line_and_scatter", x_label="", y_label="", color=None):
         # プロットの更新
         if data_type == "raw_data":
             label = "Raw Data"
+            color = color or "blue"  # Raw Dataの色を青に固定
             if plot_type == "line":
-                self.raw_data = self.axes.plot(x, y, label=label)  # リスト
+                self.raw_data = self.axes.plot(x, y, label=label, color=color)  # リスト
             elif plot_type == "scatter":
-                self.raw_data = self.axes.scatter(
-                    x, y, label=label)  # 単一オブジェクト
+                self.raw_data = self.axes.scatter(x, y, label=label, color=color)  # 単一オブジェクト
             elif plot_type == "line_and_scatter":
-                self.raw_data = self.axes.plot(x, y, marker="o", label=label)
+                self.raw_data = self.axes.plot(x, y, marker="o", label=label, color=color)
         elif data_type == "estimates":
             label = "Estimates"
+            color = color or "orange"  # Estimatesの色をオレンジに固定
             if plot_type == "line":
-                self.estimates = self.axes.plot(x, y, label=label)  # リスト
+                self.estimates = self.axes.plot(x, y, label=label, color=color)  # リスト
             elif plot_type == "scatter":
-                self.estimates = self.axes.scatter(
-                    x, y, label=label)  # 単一オブジェクト
+                self.estimates = self.axes.scatter(x, y, label=label, color=color)  # 単一オブジェクト
             elif plot_type == "line_and_scatter":
-                self.estimates = self.axes.plot(x, y, marker="o", label=label)
+                self.estimates = self.axes.plot(x, y, marker="o", label=label, color=color)
         elif data_type == "predicts":
             label = "Predicts"
+            color = color or "green"  # Predictsの色を緑に固定
             if plot_type == "line":
-                self.predicts = self.axes.plot(x, y, label=label)  # リスト
+                self.predicts = self.axes.plot(x, y, label=label, color=color)  # リスト
             elif plot_type == "scatter":
-                self.predicts = self.axes.scatter(
-                    x, y, label=label)  # 単一オブジェクト
+                self.predicts = self.axes.scatter(x, y, label=label, color=color)  # 単一オブジェクト
             elif plot_type == "line_and_scatter":
-                self.predicts = self.axes.plot(x, y, marker="o", label=label)
+                self.predicts = self.axes.plot(x, y, marker="o", label=label, color=color)
 
         self.axes.set_xlabel(x_label)
         self.axes.set_ylabel(y_label)
@@ -58,6 +58,13 @@ class GraphCanvas(FigureCanvas):
         elif data_type == "predicts" and self.predicts:
             self._remove_plot(self.predicts)
             self.predicts = None
+
+        # 凡例を更新または削除
+        self._update_legend()
+
+        # 軸範囲の自動調整
+        self.axes.relim()  # データ範囲を再計算
+        self.axes.autoscale_view()  # 軸範囲を更新
         self.draw()
 
     def _remove_plot(self, plot):
@@ -67,3 +74,11 @@ class GraphCanvas(FigureCanvas):
                 line.remove()
         elif hasattr(plot, "remove"):  # PathCollectionなどの場合
             plot.remove()
+
+    def _update_legend(self):
+        """凡例を更新または削除する"""
+        handles, labels = self.axes.get_legend_handles_labels()
+        if handles:  # 凡例に表示するものがある場合
+            self.axes.legend()
+        else:  # すべてのプロットが削除された場合、凡例を削除
+            self.axes.legend().remove()

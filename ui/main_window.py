@@ -203,9 +203,6 @@ class MainWindow(QMainWindow):
         left_layout.addWidget(self.export_button)
         self.export_button.setEnabled(False)  # 初期状態は無効化
 
-        # 上詰め用のスペーサー
-        # left_layout.addStretch()
-
         left_widget.setLayout(left_layout)
 
         # QScrollAreaを作成

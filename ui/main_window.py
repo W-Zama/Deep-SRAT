@@ -395,8 +395,6 @@ class MainWindow(QMainWindow):
         self.set_dataset_from_columns_name(
             "time_interval", "number_of_failures")
 
-        # 学習済みモデルを読み込み
-
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

@@ -1,5 +1,6 @@
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+import mplcursors
 
 
 class GraphCanvas(FigureCanvas):
@@ -8,63 +9,100 @@ class GraphCanvas(FigureCanvas):
         self.axes = fig.add_subplot(111)
         self.axes.grid()
         self.raw_data = None
+        self.raw_data_scatter = None
         self.estimates = None
+        self.estimates_scatter = None
         self.predicts = None
+        self.predicts_scatter = None
         super(GraphCanvas, self).__init__(fig)
 
     def update_plot(self, x, y, data_type, plot_type="line_and_scatter", x_label="", y_label="", color=None):
         # プロットの更新
         if data_type == "raw_data":
             label = "Raw Data"
-            color = color or "blue"  # Raw Dataの色を青に固定
+            color = color or "blue"
             if plot_type == "line":
-                self.raw_data = self.axes.plot(x, y, label=label, color=color)  # リスト
+                self.raw_data = self.axes.plot(x, y, label=label, color=color)
             elif plot_type == "scatter":
-                self.raw_data = self.axes.scatter(x, y, label=label, color=color)  # 単一オブジェクト
+                self.raw_data_scatter = self.axes.scatter(x, y, label=label, color=color)
+                self._setup_cursor(self.raw_data_scatter)
             elif plot_type == "line_and_scatter":
-                self.raw_data = self.axes.plot(x, y, marker="o", label=label, color=color)
+                self.raw_data = self.axes.plot(x, y, label=label, color=color, marker="o", linestyle="-")
+                self.raw_data_scatter = self.axes.scatter(x, y, color=color)
+                self._setup_cursor(self.raw_data_scatter)
+
         elif data_type == "estimates":
             label = "Estimates"
-            color = color or "orange"  # Estimatesの色をオレンジに固定
+            color = color or "orange"
             if plot_type == "line":
-                self.estimates = self.axes.plot(x, y, label=label, color=color)  # リスト
+                self.estimates = self.axes.plot(x, y, label=label, color=color)
             elif plot_type == "scatter":
-                self.estimates = self.axes.scatter(x, y, label=label, color=color)  # 単一オブジェクト
+                self.estimates_scatter = self.axes.scatter(x, y, label=label, color=color)
+                self._setup_cursor(self.estimates_scatter)
             elif plot_type == "line_and_scatter":
-                self.estimates = self.axes.plot(x, y, marker="o", label=label, color=color)
+                self.estimates = self.axes.plot(x, y, label=label, color=color, marker="o", linestyle="-")
+                self.estimates_scatter = self.axes.scatter(x, y, color=color)
+                self._setup_cursor(self.estimates_scatter)
+
         elif data_type == "predicts":
             label = "Predicts"
-            color = color or "green"  # Predictsの色を緑に固定
+            color = color or "green"
             if plot_type == "line":
-                self.predicts = self.axes.plot(x, y, label=label, color=color)  # リスト
+                self.predicts = self.axes.plot(x, y, label=label, color=color)
             elif plot_type == "scatter":
-                self.predicts = self.axes.scatter(x, y, label=label, color=color)  # 単一オブジェクト
+                self.predicts_scatter = self.axes.scatter(x, y, label=label, color=color)
+                self._setup_cursor(self.predicts_scatter)
             elif plot_type == "line_and_scatter":
-                self.predicts = self.axes.plot(x, y, marker="o", label=label, color=color)
+                self.predicts = self.axes.plot(x, y, label=label, color=color, marker="o", linestyle="-")
+                self.predicts_scatter = self.axes.scatter(x, y, color=color)
+                self._setup_cursor(self.predicts_scatter)
 
         self.axes.set_xlabel(x_label)
         self.axes.set_ylabel(y_label)
         self.axes.legend()
         self.draw()
 
+    def _setup_cursor(self, scatter):
+        """アノテーションの設定とホバー外れ時の動作を定義"""
+        cursor = mplcursors.cursor(scatter, hover=True)
+
+        # ホバー時の表示内容をカスタマイズ
+        @cursor.connect("add")
+        def on_add(sel):
+            sel.annotation.set_text(f"X: {sel.target[0]:.2f}\nY: {sel.target[1]:.2f}")
+
+        # ホバーが外れた際にアノテーションを非表示
+        @cursor.connect("remove")
+        def on_remove(sel):
+            sel.annotation.set_visible(False)
+
     def delete_plot(self, data_type):
-        # プロットの削除
-        if data_type == "raw_data" and self.raw_data:
-            self._remove_plot(self.raw_data)
-            self.raw_data = None
-        elif data_type == "estimates" and self.estimates:
-            self._remove_plot(self.estimates)
-            self.estimates = None
-        elif data_type == "predicts" and self.predicts:
-            self._remove_plot(self.predicts)
-            self.predicts = None
+        """指定されたデータタイプのプロットを削除"""
+        if data_type == "raw_data":
+            if self.raw_data:
+                self._remove_plot(self.raw_data)
+                self.raw_data = None
+            if self.raw_data_scatter:
+                self._remove_plot(self.raw_data_scatter)
+                self.raw_data_scatter = None
+        elif data_type == "estimates":
+            if self.estimates:
+                self._remove_plot(self.estimates)
+                self.estimates = None
+            if self.estimates_scatter:
+                self._remove_plot(self.estimates_scatter)
+                self.estimates_scatter = None
+        elif data_type == "predicts":
+            if self.predicts:
+                self._remove_plot(self.predicts)
+                self.predicts = None
+            if self.predicts_scatter:
+                self._remove_plot(self.predicts_scatter)
+                self.predicts_scatter = None
 
-        # 凡例を更新または削除
         self._update_legend()
-
-        # 軸範囲の自動調整
-        self.axes.relim()  # データ範囲を再計算
-        self.axes.autoscale_view()  # 軸範囲を更新
+        self.axes.relim()
+        self.axes.autoscale_view()
         self.draw()
 
     def _remove_plot(self, plot):
@@ -78,7 +116,7 @@ class GraphCanvas(FigureCanvas):
     def _update_legend(self):
         """凡例を更新または削除する"""
         handles, labels = self.axes.get_legend_handles_labels()
-        if handles:  # 凡例に表示するものがある場合
+        if handles:
             self.axes.legend()
-        else:  # すべてのプロットが削除された場合、凡例を削除
+        else:
             self.axes.legend().remove()

@@ -160,6 +160,16 @@ class MainWindow(QMainWindow):
         left_layout.addWidget(self.hyperparameter_section)
         self.hyperparameter_section.setEnabled(False)  # 初期状態は無効化
 
+        # Batch Size
+        label_form_batch_size = LabelAndWidget("Batch Size", QComboBox())
+        label_form_batch_size.widget.setObjectName("BatchSizeInput")
+        label_form_batch_size.widget.addItems(
+            [str(batch_size)
+             for batch_size in self.hyperparameter_manager.get_options("batch_size")]
+        )
+        hyperparameter_layout.addWidget(label_form_batch_size)
+        hyperparameter_layout.addWidget(create_line())
+
         # Spacer
         left_layout.addSpacerItem(QSpacerItem(
             0, 20, QSizePolicy.Minimum, QSizePolicy.Minimum))
@@ -305,7 +315,7 @@ class MainWindow(QMainWindow):
             QComboBox, "NumOfUnitsPerLayerInput").currentText()
         learning_rate = self.findChild(
             QComboBox, "LearningRateInput").currentText()
-        batch_size = 2
+        batch_size = self.findChild(QComboBox, "BatchSizeInput").currentText()
 
         if seed == "":
             seed = None
@@ -321,7 +331,7 @@ class MainWindow(QMainWindow):
         self.log_text_edit.append_log("Model training is started.")
 
         self.deep_srgm.run(self.dataset.get_testing_date_df(), self.dataset.get_num_of_failures_per_unit_time_df(), seed=seed, num_of_epochs=int(
-            num_of_epochs), num_of_units_per_layer=int(num_of_units_per_layer), learning_rate=float(learning_rate), batch_size=batch_size)
+            num_of_epochs), num_of_units_per_layer=int(num_of_units_per_layer), learning_rate=float(learning_rate), batch_size=int(batch_size))
 
         self.log_text_edit.append_log("Model training is completed.")
 

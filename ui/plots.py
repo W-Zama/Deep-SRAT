@@ -4,10 +4,14 @@ import mplcursors
 
 
 class GraphCanvas(FigureCanvas):
-    def __init__(self, parent=None, width=5, height=4, dpi=100):
+    def __init__(self, x_label, y_label, parent=None, width=5, height=4, dpi=100):
         fig = Figure(figsize=(width, height), dpi=dpi)
         self.axes = fig.add_subplot(111)
         self.axes.grid()
+        self.x_label = x_label
+        self.y_label = y_label
+        self.axes.set_xlabel(x_label)
+        self.axes.set_ylabel(y_label)
         self.raw_data = None
         self.raw_data_scatter = None
         self.estimates = None
@@ -16,7 +20,7 @@ class GraphCanvas(FigureCanvas):
         self.predicts_scatter = None
         super(GraphCanvas, self).__init__(fig)
 
-    def update_plot(self, x, y, data_type, plot_type="line_and_scatter", x_label="", y_label="", color=None):
+    def update_plot(self, x, y, data_type, plot_type="line_and_scatter", color=None):
         # プロットの更新
         if data_type == "raw_data":
             label = "Raw Data"
@@ -57,8 +61,8 @@ class GraphCanvas(FigureCanvas):
                 self.predicts_scatter = self.axes.scatter(x, y, color=color)
                 self._setup_cursor(self.predicts_scatter)
 
-        self.axes.set_xlabel(x_label)
-        self.axes.set_ylabel(y_label)
+        self.axes.set_xlabel(self.x_label)
+        self.axes.set_ylabel(self.y_label)
         self.axes.legend()
         self.draw()
 

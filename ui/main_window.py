@@ -287,10 +287,8 @@ class MainWindow(QMainWindow):
         self.canvas_estimate_cumulative.delete_plot("estimates")
         self.canvas_predict_per_unit_time.delete_plot("predicts")
         self.canvas_predict_cumulative.delete_plot("predicts")
-        self.canvas_estimate_per_unit_time.update_plot(self.dataset.testing_date_df, self.dataset.num_of_failures_per_unit_time_df, "raw_data", "line_and_scatter",
-                                                       self.dataset.testing_date_column_name, self.dataset.num_of_failures_per_unit_time_column_name)
-        self.canvas_estimate_cumulative.update_plot(self.dataset.testing_date_df, self.dataset.cumulative_num_of_failures_df, "raw_data", "line_and_scatter",
-                                                    self.dataset.testing_date_column_name, "Cumulative " + self.dataset.num_of_failures_per_unit_time_column_name)
+        self.canvas_estimate_per_unit_time.update_plot(self.dataset.testing_date_df, self.dataset.num_of_failures_per_unit_time_df, "raw_data", "line_and_scatter")
+        self.canvas_estimate_cumulative.update_plot(self.dataset.testing_date_df, self.dataset.cumulative_num_of_failures_df, "raw_data", "line_and_scatter")
 
         self.log_text_edit.append_log(
             f"Columns selected successfully\nTesting Date: \"{self.dataset.testing_date_column_name}\", Number of Failures per Unit Time: \"{self.dataset.num_of_failures_per_unit_time_column_name}\"")
@@ -335,8 +333,7 @@ class MainWindow(QMainWindow):
 
         self.canvas_predict_per_unit_time.update_plot(
             self.dataset.testing_date_df, self.dataset.num_of_failures_per_unit_time_df, "raw_data", "line_and_scatter")
-        self.canvas_predict_cumulative.update_plot(self.dataset.testing_date_df, self.dataset.cumulative_num_of_failures_df, "raw_data", "line_and_scatter",
-                                                   self.dataset.testing_date_column_name, "Cumulative " + self.dataset.num_of_failures_per_unit_time_column_name)
+        self.canvas_predict_cumulative.update_plot(self.dataset.testing_date_df, self.dataset.cumulative_num_of_failures_df, "raw_data", "line_and_scatter")
 
     def predict(self):
         # 予測点を取得
@@ -354,12 +351,12 @@ class MainWindow(QMainWindow):
             # 予測値をグラフに描画
             self.canvas_predict_per_unit_time.delete_plot("predicts")
             self.canvas_predict_per_unit_time.update_plot(
-                X_predict, y_predict, "predicts", "line_and_scatter", self.dataset.testing_date_column_name, self.dataset.num_of_failures_per_unit_time_column_name)
+                X_predict, y_predict, "predicts", "line_and_scatter")
             self.canvas_predict_cumulative.delete_plot("predicts")
             y_predict_cumulative = self.dataset.cumulative_num_of_failures_df.iloc[-1].values + np.cumsum(
                 y_predict)
             self.canvas_predict_cumulative.update_plot(
-                X_predict, y_predict_cumulative, "predicts", "line_and_scatter", self.dataset.testing_date_column_name)
+                X_predict, y_predict_cumulative, "predicts", "line_and_scatter")
 
     def export_results(self):
         # 予測結果をエクスポート
@@ -396,27 +393,31 @@ class MainWindow(QMainWindow):
         # Graphs Canvas
         tab = QWidget()
         graph_tab_layout = QVBoxLayout(tab)
-        self.canvas_estimate_per_unit_time = GraphCanvas(self)
+        self.canvas_estimate_per_unit_time = GraphCanvas(
+            "Testing Date", "Number of Failures per Unit Time")
         graph_tab_layout.addWidget(self.canvas_estimate_per_unit_time)
         graph_tabs.addTab(tab, "Estimate (Per Unit Time)")
 
         tab = QWidget()
         graph_tab_layout = QVBoxLayout(tab)
-        self.canvas_estimate_cumulative = GraphCanvas(self)
+        self.canvas_estimate_cumulative = GraphCanvas(
+            "Testing Date", "Cumulative Number of Failures")
         graph_tab_layout.addWidget(self.canvas_estimate_cumulative)
         right_layout.addWidget(graph_tabs)
         graph_tabs.addTab(tab, "Estimate (Cumulative)")
 
         tab = QWidget()
         graph_tab_layout = QVBoxLayout(tab)
-        self.canvas_predict_per_unit_time = GraphCanvas(self)
+        self.canvas_predict_per_unit_time = GraphCanvas(
+            "Testing Date", "Number of Failures per Unit Time")
         graph_tab_layout.addWidget(self.canvas_predict_per_unit_time)
         right_layout.addWidget(graph_tabs)
         graph_tabs.addTab(tab, "Predict (Per Unit Time)")
 
         tab = QWidget()
         graph_tab_layout = QVBoxLayout(tab)
-        self.canvas_predict_cumulative = GraphCanvas(self)
+        self.canvas_predict_cumulative = GraphCanvas(
+            "Testing Date", "Cumulative Number of Failures")
         graph_tab_layout.addWidget(self.canvas_predict_cumulative)
         right_layout.addWidget(graph_tabs)
         graph_tabs.addTab(tab, "Predict (Cumulative)")

@@ -116,6 +116,7 @@ class MainWindow(QMainWindow):
 
         # Seed
         label_form_seed = LabelAndWidget("Seed", QLineEdit())
+        label_form_seed.widget.setObjectName("SeedInput")
         label_form_seed.widget.setValidator(QIntValidator())
         label_form_seed.widget.setPlaceholderText(
             "Enter a seed (If not set, leave blank)")
@@ -125,6 +126,7 @@ class MainWindow(QMainWindow):
         # Number of Epochs
         label_form_num_of_epochs = LabelAndWidget(
             "Number of Epochs", QComboBox())
+        label_form_num_of_epochs.widget.setObjectName("NumOfEpochsInput")
         label_form_num_of_epochs.widget.addItems(
             [str(epoch)
              for epoch in self.hyperparameter_manager.get_options("epochs")]
@@ -135,6 +137,8 @@ class MainWindow(QMainWindow):
         # Number of Units per Layer
         label_form_num_of_units_per_layer = LabelAndWidget(
             "Number of Units per Layer", QComboBox())
+        label_form_num_of_units_per_layer.widget.setObjectName(
+            "NumOfUnitsPerLayerInput")
         label_form_num_of_units_per_layer.widget.addItems(
             [str(unit) for unit in self.hyperparameter_manager.get_options(
                 "units_per_layer")]
@@ -145,6 +149,7 @@ class MainWindow(QMainWindow):
         # Learning Rate
         label_form_learning_rate = LabelAndWidget(
             "Learning Rate", QComboBox())
+        label_form_learning_rate.widget.setObjectName("LearningRateInput")
         label_form_learning_rate.widget.addItems(
             [str(lr)
              for lr in self.hyperparameter_manager.get_options("learning_rate")]
@@ -200,6 +205,7 @@ class MainWindow(QMainWindow):
 
         # 結果のエクスポートボタン
         self.export_button = QPushButton("Export Results")
+        self.export_button.clicked.connect(self.export_results)
         left_layout.addWidget(self.export_button)
         self.export_button.setEnabled(False)  # 初期状態は無効化
 
@@ -232,6 +238,14 @@ class MainWindow(QMainWindow):
 
         # カラム選択セクションを有効化
         self.column_section.setEnabled(True)
+        self.hyperparameter_section.setEnabled(False)
+        self.run_button.setEnabled(False)
+        self.label_form_predict_spinbox.widget.setEnabled(False)
+        self.export_button.setEnabled(False)
+
+        # カラムセクションの選択コンボボックスをクリア
+        self.testing_date_combobox.clear()
+        self.num_of_failures_per_unit_time_combobox.clear()
 
         # カラム選択セクションのカラム選択コンボボックスにカラム名を追加
         self.testing_date_combobox.addItems(
@@ -242,6 +256,14 @@ class MainWindow(QMainWindow):
     def import_csv(self):
         file_path = self.show_file_dialog()
         self.read_csv_and_set_dataset_and_update_state(file_path)
+        self.canvas_estimate_per_unit_time.delete_plot("raw_data")
+        self.canvas_estimate_cumulative.delete_plot("raw_data")
+        self.canvas_predict_per_unit_time.delete_plot("raw_data")
+        self.canvas_predict_cumulative.delete_plot("raw_data")
+        self.canvas_estimate_per_unit_time.delete_plot("estimates")
+        self.canvas_estimate_cumulative.delete_plot("estimates")
+        self.canvas_predict_per_unit_time.delete_plot("predicts")
+        self.canvas_predict_cumulative.delete_plot("predicts")
 
     def confirm_column_selection(self):
         self.set_dataset_from_columns_name(self.testing_date_combobox.currentText(
@@ -257,6 +279,14 @@ class MainWindow(QMainWindow):
         self.dataset.set_dataset()
 
         # グラフを描画
+        self.canvas_estimate_per_unit_time.delete_plot("raw_data")
+        self.canvas_estimate_cumulative.delete_plot("raw_data")
+        self.canvas_predict_per_unit_time.delete_plot("raw_data")
+        self.canvas_predict_cumulative.delete_plot("raw_data")
+        self.canvas_estimate_per_unit_time.delete_plot("estimates")
+        self.canvas_estimate_cumulative.delete_plot("estimates")
+        self.canvas_predict_per_unit_time.delete_plot("predicts")
+        self.canvas_predict_cumulative.delete_plot("predicts")
         self.canvas_estimate_per_unit_time.update_plot(self.dataset.testing_date_df, self.dataset.num_of_failures_per_unit_time_df, "raw_data", "line_and_scatter",
                                                        self.dataset.testing_date_column_name, self.dataset.num_of_failures_per_unit_time_column_name)
         self.canvas_estimate_cumulative.update_plot(self.dataset.testing_date_df, self.dataset.cumulative_num_of_failures_df, "raw_data", "line_and_scatter",
@@ -266,15 +296,18 @@ class MainWindow(QMainWindow):
             f"Columns selected successfully\nTesting Date: \"{self.dataset.testing_date_column_name}\", Number of Failures per Unit Time: \"{self.dataset.num_of_failures_per_unit_time_column_name}\"")
 
     def run(self):
+        self.canvas_predict_per_unit_time.delete_plot("predicts")
+        self.canvas_predict_cumulative.delete_plot("predicts")
+
         # ハイパーパラメータを取得
-        seed = self.hyperparameter_section.findChild(QLineEdit).text()
-        num_of_epochs = self.hyperparameter_section.findChild(
-            QComboBox).currentText()
-        num_of_units_per_layer = self.hyperparameter_section.findChild(
-            QComboBox).currentText()
-        learning_rate = self.hyperparameter_section.findChild(
-            QComboBox).currentText()
-        batch_size = 32
+        seed = self.findChild(QLineEdit, "SeedInput").text()
+        num_of_epochs = self.findChild(
+            QComboBox, "NumOfEpochsInput").currentText()
+        num_of_units_per_layer = self.findChild(
+            QComboBox, "NumOfUnitsPerLayerInput").currentText()
+        learning_rate = self.findChild(
+            QComboBox, "LearningRateInput").currentText()
+        batch_size = 2
 
         if seed == "":
             seed = None
@@ -297,6 +330,9 @@ class MainWindow(QMainWindow):
         self.label_form_predict_spinbox.widget.setEnabled(True)
         self.export_button.setEnabled(True)
 
+        self.canvas_predict_per_unit_time.delete_plot("predicts")
+        self.canvas_predict_cumulative.delete_plot("predicts")
+
         self.canvas_predict_per_unit_time.update_plot(
             self.dataset.testing_date_df, self.dataset.num_of_failures_per_unit_time_df, "raw_data", "line_and_scatter")
         self.canvas_predict_cumulative.update_plot(self.dataset.testing_date_df, self.dataset.cumulative_num_of_failures_df, "raw_data", "line_and_scatter",
@@ -309,9 +345,11 @@ class MainWindow(QMainWindow):
         # 予測値取得
         X_predict, y_predict = self.deep_srgm.predict(num_of_predicts)
 
+        self.canvas_predict_per_unit_time.delete_plot("predicts")
+        self.canvas_predict_cumulative.delete_plot("predicts")
+
         if (X_predict is None) or (y_predict is None):
-            self.canvas_predict_per_unit_time.delete_plot("predicts")
-            self.canvas_predict_cumulative.delete_plot("predicts")
+            pass
         else:
             # 予測値をグラフに描画
             self.canvas_predict_per_unit_time.delete_plot("predicts")
@@ -322,6 +360,27 @@ class MainWindow(QMainWindow):
                 y_predict)
             self.canvas_predict_cumulative.update_plot(
                 X_predict, y_predict_cumulative, "predicts", "line_and_scatter", self.dataset.testing_date_column_name)
+
+    def export_results(self):
+        # 予測結果をエクスポート
+        result_df = self.deep_srgm.generate_result_df()
+        if result_df is None:
+            self.log_text_edit.append_log(
+                "There are no predictions to export.")
+        else:
+            options = QFileDialog.Options()
+            file_path, _ = QFileDialog.getSaveFileName(
+                self,
+                "Save Predictions",
+                "predictions.csv",
+                "CSV Files (*.csv);;All Files (*)",
+                options=options
+            )
+
+            if file_path:
+                result_df.to_csv(file_path, index=False)
+                self.log_text_edit.append_log(
+                    f"Predictions exported successfully:{file_path}")
 
     def create_right_widget(self):
         right_widget = QWidget()
@@ -362,14 +421,14 @@ class MainWindow(QMainWindow):
         right_layout.addWidget(graph_tabs)
         graph_tabs.addTab(tab, "Predict (Cumulative)")
 
-        tab = QWidget()
-        layout = QVBoxLayout(tab)
-        self.result_widget = QTextEdit(
-            "The results will be displayed here after you run.")
-        self.result_widget.setReadOnly(True)
-        layout.addWidget(self.result_widget)
-        right_layout.addWidget(tab)
-        graph_tabs.addTab(tab, "Result Summary")
+        # tab = QWidget()
+        # layout = QVBoxLayout(tab)
+        # self.result_widget = QTextEdit(
+        #     "The results will be displayed here after you run.")
+        # self.result_widget.setReadOnly(True)
+        # layout.addWidget(self.result_widget)
+        # right_layout.addWidget(tab)
+        # graph_tabs.addTab(tab, "Result Summary")
 
         right_vertical_splitter.addWidget(graph_tabs)
 

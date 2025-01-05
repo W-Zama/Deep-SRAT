@@ -15,12 +15,16 @@ from logic.config import Config
 class DeepSRGM():
     def __init__(self, main_window):
         self.main_window = main_window
+        self.X_predict = None
+        self.predictions_original = None
 
     def set_seed(self, seed):
-        np.random.seed(seed)
-        torch.manual_seed(seed)
+        np.random.seed(int(seed))
+        torch.manual_seed(int(seed))
 
     def run(self, X, y, seed, num_of_epochs, num_of_units_per_layer, learning_rate, batch_size):
+        self.main_window.canvas_predict_per_unit_time.delete_plot("raw_data")
+        self.main_window.canvas_predict_cumulative.delete_plot("raw_data")
 
         if seed is not None:
             self.set_seed(seed)
@@ -45,51 +49,54 @@ class DeepSRGM():
         train_loader = torch.utils.data.DataLoader(
             train_dataset, batch_size=batch_size, shuffle=False)
 
-        if Config.is_debug_mode():
-            self.model.load_state_dict(torch.load("deep_srgm_model.pth"))
-        else:
-            for epoch in range(num_of_epochs):
-                self.model.train()
-                epoch_loss = 0.0
-                batch_count = 0
+        for epoch in range(num_of_epochs):
+            self.model.train()
+            epoch_loss = 0.0
+            batch_count = 0
 
-                for input, targets in train_loader:
-                    outputs = self.model(input)
-                    loss = criterion(outputs, targets)
+            for input, targets in train_loader:
+                outputs = self.model(input)
+                loss = criterion(outputs, targets)
 
-                    optimizer.zero_grad()
-                    loss.backward()
-                    optimizer.step()
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
 
-                    epoch_loss += loss.item()
-                    batch_count += 1
+                epoch_loss += loss.item()
+                batch_count += 1
 
-                train_losses.append(epoch_loss / batch_count)
+            train_losses.append(epoch_loss / batch_count)
 
-                # ログの出力
-                if (epoch + 1) % 100 == 0:
-                    self.main_window.log_text_edit.append_log(
-                        f"Epoch [{epoch + 1}/{num_of_epochs}], Train Loss: {loss.item():.4f}")
+            # ログの出力
+            if (epoch + 1) % 100 == 0:
+                self.main_window.log_text_edit.append_log(
+                    f"Epoch [{epoch + 1}/{num_of_epochs}], Train Loss: {loss.item():.4f}")
 
-                    # メインウィンドウの更新
-                    QApplication.processEvents()
+                # メインウィンドウの更新
+                QApplication.processEvents()
 
         self.model.eval()
         with torch.no_grad():
             predictions = self.model(X_tensor).numpy()
 
-            predictions_original = self.scaler_y.inverse_transform(predictions)
+            self.predictions_original = self.scaler_y.inverse_transform(
+                predictions)
             y_original = self.scaler_y.inverse_transform(y_tensor.numpy())
 
-            cumulative_predictions = np.cumsum(predictions_original)
+            cumulative_predictions = np.cumsum(self.predictions_original)
             cumulative_y = np.cumsum(y_original)
+
+        self.main_window.canvas_estimate_per_unit_time.delete_plot("estimates")
+        self.main_window.canvas_estimate_cumulative.delete_plot("estimates")
+        self.main_window.canvas_predict_per_unit_time.delete_plot("predicts")
+        self.main_window.canvas_predict_cumulative.delete_plot("predicts")
 
         # 予測値のプロット（単位時間あたり）
         self.main_window.canvas_estimate_per_unit_time.update_plot(
-            X, predictions_original, "estimates", "line_and_scatter")
+            X, self.predictions_original, "estimates", "line_and_scatter")
 
         # 予測値の累積値を計算
-        cumulative_predictions = np.cumsum(predictions_original)
+        cumulative_predictions = np.cumsum(self.predictions_original)
 
         # 予測値のプロット（累積）
         self.main_window.canvas_estimate_cumulative.update_plot(
@@ -99,20 +106,32 @@ class DeepSRGM():
 
     def predict(self, num_of_predicts):
         if (num_of_predicts <= 0):
+            self.X_predict = None
+            self.predictions_original = None
             return None, None
         # last_Xからnum_of_predicts分の予測を行う
-        X_predict = np.arange(self.last_X + 1, self.last_X +
-                              1 + num_of_predicts).reshape(-1, 1)
-        X_predict_scaled = self.scaler_X.transform(X_predict)
+        self.X_predict = np.arange(self.last_X + 1, self.last_X +
+                                   1 + num_of_predicts).reshape(-1, 1)
+        X_predict_scaled = self.scaler_X.transform(self.X_predict)
         X_predict_scaled = torch.tensor(
             X_predict_scaled, dtype=torch.float32)
 
         with torch.no_grad():
             predictions = self.model(X_predict_scaled).numpy()
 
-            predictions_original = self.scaler_y.inverse_transform(predictions)
+            self.predictions_original = self.scaler_y.inverse_transform(
+                predictions)
 
-        return X_predict, predictions_original
+        return self.X_predict, self.predictions_original
+
+    def generate_result_df(self):
+        if self.X_predict is None or self.predictions_original is None:
+            return
+
+        result_df = pd.DataFrame(
+            {self.main_window.dataset.testing_date_column_name: self.X_predict.flatten(), self.main_window.dataset.num_of_failures_per_unit_time_column_name: self.predictions_original.flatten()})
+
+        return result_df
 
 
 class DeepSRGMModel(nn.Module):

@@ -1,4 +1,6 @@
 import yaml
+import os
+import sys
 
 
 class HyperparameterManager:
@@ -9,7 +11,12 @@ class HyperparameterManager:
         Args:
             config_path (str): ハイパーパラメータ設定ファイル（YAML）のパス。
         """
-        self.config_path = config_path
+        if hasattr(sys, '_MEIPASS'):
+            # バンドルされた一時ディレクトリの場合
+            self.config_path = os.path.join(sys._MEIPASS, config_path)
+        else:
+            # 通常の実行環境の場合
+            self.config_path = os.path.join(os.path.abspath("."), config_path)
         self.hyperparameters = {}
 
     def load_parameters(self):

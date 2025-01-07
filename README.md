@@ -1,6 +1,6 @@
-# Deep-SRGM
+# Deep-Srat
 
-Deep-SRGM is a tool designed to predict the number of failures over time using a deep learning-based model. This application leverages advanced machine learning techniques to provide accurate failure predictions.
+Deep-Srat is a tool designed to predict the number of failures over time using a deep learning-based model. This application leverages advanced machine learning techniques to provide accurate failure predictions.
 
 ## Key Features
 
